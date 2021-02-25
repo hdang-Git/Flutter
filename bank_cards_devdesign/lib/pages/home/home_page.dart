@@ -4,9 +4,12 @@ import 'package:bank_cards_devdesign/components/card/front_card.dart';
 import 'package:bank_cards_devdesign/pages/detail/detail_page.dart';
 import 'package:bank_cards_devdesign/pages/home/components/home_header.dart';
 import 'package:bank_cards_devdesign/models/credit_card.dart';
+import 'package:bank_cards_devdesign/pages/home/components/page_notifier.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mccounting_text/mccounting_text.dart';
+import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../size_config.dart';
@@ -19,7 +22,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  PageController pageController = PageController(viewportFraction: 0.6);
+  // PageController pageController = PageController(viewportFraction: 0.6);
+  PageNotifier _pageNotifier = PageNotifier();
   int _currentIndex = 0;
   int _previousIndex = 0;
 
@@ -43,16 +47,20 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // _buildHeader()
-            HomeHeader(),
-            // _buildBalance(),
-            Balance(previousIndex: _previousIndex, currentIndex: _currentIndex),
-            _buildCardsList(),
-            _buildPageIndicator(),
-          ],
+        child: ChangeNotifierProvider(
+          create: (_) => _pageNotifier,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // _buildHeader()
+              HomeHeader(),
+              // _buildBalance(),
+              Balance(
+                  previousIndex: _previousIndex, currentIndex: _currentIndex),
+              _buildCardsList(),
+              _buildPageIndicator(),
+            ],
+          ),
         ),
       ),
     );
@@ -141,22 +149,42 @@ class _HomePageState extends State<HomePage> {
           child: PageView.builder(
             scrollDirection: Axis.vertical,
             itemCount: cards.length,
-            controller: pageController,
+            controller: _pageNotifier.pageController,
             onPageChanged: (index) => setState(() {
               _previousIndex = _currentIndex;
               _currentIndex = index;
             }),
             itemBuilder: (context, index) {
-              return GestureDetector(
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => DetailPage(card: cards[index]))),
-                child: Container(
-                  padding:
-                      EdgeInsets.only(bottom: SizeConfig.defaultHeight * 5),
-                  child: FrontCard(
-                    card: cards[index],
+              return Consumer<PageNotifier>(
+                builder: (context, value, child) {
+                  if (value.currentPage > index) {
+                    double scaleFactor =
+                        max(1 - (value.currentPage - index) * 0.4, 0.6);
+                    double angleFactor =
+                        min((value.currentPage - index) * 20, 20);
+                    return Transform(
+                      transform: Matrix4.identity()
+                        ..setEntry(3, 2, 0.001)
+                        ..scale(scaleFactor)
+                        ..rotateZ(-pi / 180 * angleFactor),
+                      alignment: Alignment.center,
+                      child: child,
+                    );
+                  }
+                  return child;
+                },
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              DetailPage(card: cards[index]))),
+                  child: Container(
+                    padding:
+                        EdgeInsets.only(bottom: SizeConfig.defaultHeight * 5),
+                    child: FrontCard(
+                      card: cards[index],
+                    ),
                   ),
                 ),
               );
@@ -170,7 +198,7 @@ class _HomePageState extends State<HomePage> {
           horizontal: SizeConfig.defaultWidth * 2,
           vertical: SizeConfig.defaultHeight * 2),
       child: SmoothPageIndicator(
-        controller: pageController,
+        controller: _pageNotifier.pageController,
         count: cards.length,
         effect: WormEffect(
           dotHeight: SizeConfig.defaultHeight,

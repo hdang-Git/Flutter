@@ -1,14 +1,24 @@
 import 'dart:math';
 
 import 'package:bank_cards_devdesign/models/credit_card.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:simple_animations/simple_animations.dart';
 
 import '../../size_config.dart';
 
 class FrontCard extends StatelessWidget {
   final CreditCard card;
+  final bool showCardNumber;
+  final bool animatedCardNumber;
 
-  const FrontCard({Key key, @required this.card}) : super(key: key);
+  // const FrontCard({Key key, @required this.card}) : super(key: key);
+  const FrontCard(
+      {Key key,
+      @required this.card,
+      this.showCardNumber = false,
+      this.animatedCardNumber = true})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -66,13 +76,34 @@ class FrontCard extends StatelessWidget {
                       ),
                     ),
                     Spacer(),
-                    Text(
-                      card.number,
-                      style: Theme.of(context)
-                          .textTheme
-                          .headline6
-                          .copyWith(color: Colors.white),
-                    )
+                    if (showCardNumber)
+                      Expanded(
+                        flex: 5,
+                        child: PlayAnimation(
+                          tween: IntTween(begin: 0, end: card.number.length),
+                          delay: Duration(milliseconds: 400),
+                          duration: Duration(milliseconds: 500),
+                          builder: (context, child, value) {
+                            return Text(
+                              animatedCardNumber
+                                  ? card.number.substring(0, value)
+                                  : card.number,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headline6
+                                  .copyWith(color: Colors.white),
+                            );
+                          },
+                          // child: Text(
+                          //   card.number,
+                          //   style: Theme.of(context)
+                          //       .textTheme
+                          //       .headline6
+                          //       .copyWith(color: Colors.white),
+                          // ),
+                        ),
+                      )
                   ],
                 ),
               ),
@@ -108,7 +139,8 @@ class FrontCard extends StatelessWidget {
                           ? "assets/card/visa.png"
                           : "assets/card/mastercard.png",
                       height: SizeConfig.defaultHeight * 3,
-                      color: card.brand == CardBrand.visa ? Colors.white70 : null,
+                      color:
+                          card.brand == CardBrand.visa ? Colors.white70 : null,
                     ),
                   ],
                 ),
